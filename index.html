@@ -1,31 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
+<title>Finance Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pro Finance Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
-:root{
---bg-dark: linear-gradient(135deg,#0f2027,#203a43,#2c5364);
---bg-light: linear-gradient(135deg,#f5f7fa,#c3cfe2);
+body{font-family:Arial;margin:0;padding:20px;background:#1e293b;color:white}
+.card{background:#334155;padding:20px;border-radius:10px;margin-bottom:20px}
+input,select,button{padding:8px;margin-top:8px;width:100%}
+button{background:gold;border:none;font-weight:bold}
+</style>
+</head>
+<body>
+
+<h2>Finance Dashboard</h2>
+
+<div class="card">
+<h3>Currency Converter</h3>
+<input type="number" id="amount" placeholder="Amount">
+<select id="from"></select>
+<select id="to"></select>
+<button onclick="convert()">Convert</button>
+<p id="result">Result will appear here</p>
+</div>
+
+<div class="card">
+<h3>Crypto Prices</h3>
+<p id="crypto">Loading...</p>
+</div>
+
+<div class="card">
+<h3>Bitcoin Chart</h3>
+<canvas id="chart"></canvas>
+</div>
+
+<script>
+
+// SAFE LOAD CURRENCIES
+fetch("https://open.er-api.com/v6/latest/USD")
+.then(res=>res.json())
+.then(data=>{
+let currencies = Object.keys(data.rates);
+currencies.forEach(c=>{
+from.innerHTML+=`<option>${c}</option>`;
+to.innerHTML+=`<option>${c}</option>`;
+});
+from.value="USD";
+to.value="INR";
+})
+.catch(()=>alert("Currency API failed"));
+
+// SAFE CONVERT
+function convert(){
+let amt = document.getElementById("amount").value;
+let f = from.value;
+let t = to.value;
+
+fetch(`https://open.er-api.com/v6/latest/${f}`)
+.then(res=>res.json())
+.then(data=>{
+let rate = data.rates[t];
+let total = amt*rate;
+result.innerText = `${amt} ${f} = ${total.toFixed(2)} ${t}`;
+})
+.catch(()=>alert("Conversion failed"));
 }
 
-body{
-margin:0;
-font-family:Arial, sans-serif;
-background:var(--bg-dark);
-color:white;
-transition:0.3s;
-}
+// SAFE CRYPTO
+fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd")
+.then(res=>res.json())
+.then(data=>{
+crypto.innerHTML=
+`Bitcoin: $${data.bitcoin.usd}<br>
+Ethereum: $${data.ethereum.usd}`;
+})
+.catch(()=>crypto.innerText="Crypto API failed");
 
-.light{
-background:var(--bg-light);
-color:black;
+// SAFE CHART
+fetch("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7")
+.then(res=>res.json())
+.then(data=>{
+let prices = data.prices.map(p=>p[1]);
+new Chart(document.getElementById("chart"),{
+type:"line",
+data:{
+labels:["1","2","3","4","5","6","7"],
+datasets:[{
+label:"BTC",
+data:prices,
+borderColor:"gold"
+}]
 }
+});
+})
+.catch(()=>console.log("Chart failed"));
 
-header{
-display:flex;
-justify-content:space-between;
-align
+</script>
+
+</body>
+</html>
